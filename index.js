@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
-require('dotenv').config
+require('dotenv').config()
 const port = process.env.PORT || 5000;
 
 //middleware
@@ -12,9 +12,7 @@ app.use(express.json());
 /////////////////////////
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
-// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.nekc4yh.mongodb.net/?retryWrites=true&w=majority`;
-const uri = "mongodb+srv://summerUser:M1XDJxlwjycgflN5@cluster0.nekc4yh.mongodb.net/?retryWrites=true&w=majority";
-
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.nekc4yh.mongodb.net/?retryWrites=true&w=majority`;
 
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -83,6 +81,35 @@ app.get('/users/student/:email', async (req, res) => {
         const result = await classesCollection.find().toArray();
         res.send(result);
       })
+
+      app.post('/classes', async (req, res) => {
+        try {
+          const { className, classImage, availableSeats, price, instructorName, instructorEmail } = req.body;
+      
+          // Perform any necessary validation or data processing
+ //=====================================================     
+          // Save the class data to the database
+          await classesCollection.insertOne({
+            name: className,
+            image: classImage,
+            availableSeats,
+            price,
+            instructor: instructorName,
+            instructorEmail,
+            status: "pending",
+            popular: false
+
+
+          });
+      
+          res.status(201).json({ message: 'Class added successfully' });
+        } catch (error) {
+          console.error('Error adding class:', error);
+          res.status(500).json({ error: 'Failed to add class' });
+        }
+      });
+////==============================================================      
+
     app.get('/popular-classes', async (req, res) => {
         const result = await classesCollection.find({popular: true}).toArray();
         res.send(result);
