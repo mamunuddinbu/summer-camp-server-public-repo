@@ -10,8 +10,8 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.nekc4yh.mongodb.net/?retryWrites=true&w=majority`;
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.nekc4yh.mongodb.net/summerCampDB?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -41,11 +41,10 @@ async function run() {
   try {
     await client.connect();
 
-    const usersCollection = client.db("summerCampDB").collection("users");
-    const classesCollection = client.db("summerCampDB").collection("classes");
-    const selectedClasses = client
-      .db("summerCampDB")
-      .collection("selectedClasses");
+    const database = client.db("summerCampDB");
+    const usersCollection = database.collection("users");
+    const classesCollection = database.collection("classes");
+    const selectedClassesCollection = database.collection("selectedClasses");
 
     //JWT
 
@@ -60,11 +59,22 @@ async function run() {
     //   }
     //   next();
     // };
+    app.get("/deleteClas/:id", async (req, res) => {
+      console.log('hello');
+      const { id } = req.params;
+      const result = await selectedClassesCollection.deleteOne({ _id:id });
+      console.log(result);
+      if (result.deletedCount === 0) {
+        res.status(404).json({ message: "Class not found" });
+        return;
+      }
+
+      res.json({ message: "Class deleted successfully" });
+    });
+
 
     app.get("/instructor", async (req, res) => {
-      const result = await usersCollection
-        .find({ role: "instructor" })
-        .toArray();
+      const result = await usersCollection.find({ role: "instructor" }).toArray();
       res.send(result);
     });
 
@@ -88,13 +98,13 @@ async function run() {
     });
 
     app.post("/selectedClasses", async (req, res) => {
-      const user = req.body;
-      const result = await selectedClasses.insertOne(user);
+      const classData = req.body;
+      const result = await selectedClassesCollection.insertOne(classData);
       res.send(result);
     });
 
     app.get("/selectedClasses", async (req, res) => {
-      const result = await selectedClasses.find().toArray();
+      const result = await selectedClassesCollection.find().toArray();
       res.send(result);
     });
 
@@ -169,6 +179,8 @@ async function run() {
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
+  } catch (error) {
+    console.error("Error connecting to MongoDB:", error);
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
