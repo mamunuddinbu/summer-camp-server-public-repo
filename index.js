@@ -6,11 +6,9 @@ const jwt = require("jsonwebtoken");
 
 const port = process.env.PORT || 5000;
 
-//middleware
+// middleware
 app.use(cors());
 app.use(express.json());
-
-/////////////////////////
 
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.nekc4yh.mongodb.net/?retryWrites=true&w=majority`;
@@ -24,89 +22,102 @@ const client = new MongoClient(uri, {
   },
 });
 
-//====================================
-function verifyJWT(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-      return res.status(401).send({ message: 'Unauthorized access' })
-  }
-  const token = authHeader.split(' ')[1];
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
-      if (err) {
-          return res.status(403).send({ message: "forbidden access" })
-      }
-      req.decoded = decoded;
-      next();
-    })
-}
-//====================================
+// function verifyJWT(req, res, next) {
+//   const authHeader = req.headers.authorization;
+//   if (!authHeader) {
+//     return res.status(401).send({ message: 'Unauthorized access' });
+//   }
+//   const token = authHeader.split(' ')[1];
+//   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+//     if (err) {
+//       return res.status(403).send({ message: "Forbidden access" });
+//     }
+//     req.decoded = decoded;
+//     next();
+//   });
+// }
 
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
     const usersCollection = client.db("summerCampDB").collection("users");
     const classesCollection = client.db("summerCampDB").collection("classes");
+    const selectedClasses = client
+      .db("summerCampDB")
+      .collection("selectedClasses");
 
     //JWT
-    //============================================
 
-    // use verifyAdmin after verifyJWT
+    // const verifyAdmin = async (req, res, next) => {
+    //   console.log("hello");
+    //   const decodedEmail = req.decoded.email;
+    //   console.log(decodedEmail);
+    //   const query = { email: decodedEmail };
+    //   const user = await usersCollection.findOne(query);
+    //   if (user?.role !== 'admin') {
+    //     return res.status(403).send({ message: "Forbidden" });
+    //   }
+    //   next();
+    // };
 
-    const verifyAdmin = async (req, res, next) => {
-      const decodedEmail = req.decoded.email;
-      const query = { email: decodedEmail };
-      const user = await usersCollections.findOne(query);
-      if (user?.role !== 'admin') {
-          return res.status(403).send({ message: "Forbidden" });
-      }
-      next();
-        }
-
-    //=============================================
     app.get("/instructor", async (req, res) => {
       const result = await usersCollection
         .find({ role: "instructor" })
         .toArray();
       res.send(result);
     });
+
     app.get("/student", async (req, res) => {
       const result = await usersCollection.find({ role: "student" }).toArray();
       res.send(result);
     });
-    app.get("/all-user", verifyJWT, async (req, res) => {
-      const result = await usersCollection.find().toArray();
-      res.send(result);
-    });
+
+    app.get(
+      "/all-user",
+      /*verifyJWT, verifyAdmin,*/ async (req, res) => {
+        const result = await usersCollection.find().toArray();
+        res.send(result);
+      }
+    );
 
     app.post("/users", async (req, res) => {
       const user = req.body;
       const result = await usersCollection.insertOne(user);
       res.send(result);
     });
-    /////////////////////////////////////////////////////////
+
+    app.post("/selectedClasses", async (req, res) => {
+      const user = req.body;
+      const result = await selectedClasses.insertOne(user);
+      res.send(result);
+    });
+
+    app.get("/selectedClasses", async (req, res) => {
+      const result = await selectedClasses.find().toArray();
+      res.send(result);
+    });
+
     app.get("/users/admin/:email", async (req, res) => {
       const email = req.params.email;
       const query = { email };
       const user = await usersCollection.findOne(query);
       res.send({ isAdmin: user?.role === "admin" });
     });
-    // Postion for seller =====================================
+
     app.get("/users/instructor/:email", async (req, res) => {
       const email = req.params.email;
       const query = { email };
       const user = await usersCollection.findOne(query);
-      res.send({ inInstructor: user?.role === "instructor" });
+      res.send({ isInstructor: user?.role === "instructor" });
     });
-    // Postion for admin buyer =====================================
+
     app.get("/users/student/:email", async (req, res) => {
       const email = req.params.email;
       const query = { email };
       const user = await usersCollection.findOne(query);
       res.send({ isStudent: user?.role === "student" });
     });
-    /////////////////////////////////////////////////////////
 
     app.get("/classes", async (req, res) => {
       const result = await classesCollection.find().toArray();
@@ -141,19 +152,19 @@ async function run() {
         res.status(500).json({ error: "Failed to add class" });
       }
     });
-    ////==============================================================
 
     app.get("/popular-classes", async (req, res) => {
       const result = await classesCollection.find({ popular: true }).toArray();
       res.send(result);
     });
+
     app.get("/popular-instructor", async (req, res) => {
       const result = await classesCollection.find({ popular: true }).toArray();
       res.send(result);
     });
 
     console.log(process.env.DB_USER);
-    // Send a ping to confirm a successful connection
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
@@ -163,9 +174,8 @@ async function run() {
     // await client.close();
   }
 }
-run().catch(console.dir);
 
-/////////////////////////
+run().catch(console.dir);
 
 app.get("/", (req, res) => {
   res.send("Summer camp server is running");
