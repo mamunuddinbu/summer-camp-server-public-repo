@@ -44,7 +44,6 @@ async function run() {
     const database = client.db("summerCampDB");
     const usersCollection = database.collection("users");
     const classesCollection = database.collection("classes");
-    const selectedClassesCollection = database.collection("selectedClasses");
 
     //JWT
 
@@ -59,19 +58,21 @@ async function run() {
     //   }
     //   next();
     // };
-    app.get("/deleteClas/:id", async (req, res) => {
+    
+    const selectedClassesCollection = database.collection("selectedClasses");
+    app.delete("/deleteClass/:id", async (req, res) => { // Use app.delete instead of app.get
       console.log('hello');
       const { id } = req.params;
-      const result = await selectedClassesCollection.deleteOne({ _id:id });
+      const result = await selectedClassesCollection.deleteOne({ _id: id });
       console.log(result);
       if (result.deletedCount === 0) {
         res.status(404).json({ message: "Class not found" });
         return;
       }
-
+    
       res.json({ message: "Class deleted successfully" });
     });
-
+    
 
     app.get("/instructor", async (req, res) => {
       const result = await usersCollection.find({ role: "instructor" }).toArray();
