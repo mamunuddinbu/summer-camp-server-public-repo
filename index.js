@@ -58,10 +58,11 @@ async function run() {
     //   }
     //   next();
     // };
-    
+
     const selectedClassesCollection = database.collection("selectedClasses");
-    app.delete("/deleteClass/:id", async (req, res) => { // Use app.delete instead of app.get
-      console.log('hello');
+    app.delete("/deleteClass/:id", async (req, res) => {
+      // Use app.delete instead of app.get
+      console.log("hello");
       const { id } = req.params;
       const result = await selectedClassesCollection.deleteOne({ _id: id });
       console.log(result);
@@ -69,62 +70,68 @@ async function run() {
         res.status(404).json({ message: "Class not found" });
         return;
       }
-    
-      res.json({ message: "Class deleted successfully" });
+
+      res.send({ message: "Class deleted successfully" });
     });
 
+    ///////////////////////MyClasses/////////////////////////////
+    // Fetch all classes for a specific instructor by email
+    app.get("/myclasses", async (req, res) => {
+      
+        const instructorEmail = req.query.email;
+        const allClasses = await classes.find({ instructorEmail });
+        res.send(allClasses);
+     
+    });
+
+    // Update a class
+    app.put("/classes/:id", async (req, res) => {
+      
+        const updatedClass = await classes.findByIdAndUpdate(
+          req.params.id,
+          req.body,
+          { new: true }
+        );
+        res.send(updatedClass);
+     
+    });
+
+    ///////////////////////////////////////////////////////////////////////////////
     //API for Manage Classes...........................................................
     app.get("/classes", async (req, res) => {
-      try {
-        const classes = await classesCollection.find().toArray();
-        res.json(classes);
-      } catch (error) {
-        res.status(500).json({ message: "Failed to fetch classes" });
-      }
+      const classes = await classesCollection.find().toArray();
+      res.send(classes);
     });
-    
+
     app.put("/approveClass/:id", async (req, res) => {
       const { id } = req.params;
-    
-      try {
-        const result = await classesCollection.updateOne(
-          { _id: ObjectId(id) },
-          { $set: { status: "approved" } }
-        );
-    
-        if (result.matchedCount === 0) {
-          res.status(404).json({ message: "Class not found" });
-        } else {
-          res.json({ message: "Class approved successfully" });
-        }
-      } catch (error) {
-        res.status(500).json({ message: "Failed to approve class" });
-      }
+      const result = await classesCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { status: "approved" } }
+      );
     });
-    
+
     app.put("/denyClass/:id", async (req, res) => {
       const { id } = req.params;
-    
-      try {
+
+     
         const result = await classesCollection.updateOne(
           { _id: ObjectId(id) },
           { $set: { status: "denied" } }
         );
-    
+
         if (result.matchedCount === 0) {
           res.status(404).json({ message: "Class not found" });
         } else {
           res.json({ message: "Class denied successfully" });
         }
-      } catch (error) {
-        res.status(500).json({ message: "Failed to deny class" });
-      }
+     
     });
-    
+
     app.post("/sendFeedback/:id", async (req, res) => {
       const { id } = req.params;
       const { feedback } = req.body;
-    
+
       try {
         // Implement the logic to send feedback to the instructor
         res.json({ message: "Feedback sent successfully" });
@@ -132,39 +139,29 @@ async function run() {
         res.status(500).json({ message: "Failed to send feedback" });
       }
     });
-    
-
-
-
 
     // API for manage users..........................................................
     app.put("/makeAdmin/:id", async (req, res) => {
-      const { id } = req.params; 
-      
-        const result = await usersCollection.updateOne(
-          { _id: new ObjectId(id) },
-          { $set: { role: "admin" } }
-        );    
-       
-      
+      const { id } = req.params;
+      const result = await usersCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { role: "admin" } }
+      );
     });
-    
     app.put("/makeInstructor/:id", async (req, res) => {
-      const { id } = req.params;    
-      
-        const result = await usersCollection.updateOne(
-          { _id: new ObjectId(id) },
-          { $set: { role: "instructor" } }
-        );    
-      
+      const { id } = req.params;
+
+      const result = await usersCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { role: "instructor" } }
+      );
     });
-    
-    
-    
-    //..........................................................
+    //............................................................................
 
     app.get("/instructor", async (req, res) => {
-      const result = await usersCollection.find({ role: "instructor" }).toArray();
+      const result = await usersCollection
+        .find({ role: "instructor" })
+        .toArray();
       res.send(result);
     });
 
@@ -264,7 +261,6 @@ async function run() {
     });
 
     // await client.db("admin").command({ ping: 1 });
-    
   } catch (error) {
     // console.error("Error connecting to MongoDB:", error);
   } finally {
