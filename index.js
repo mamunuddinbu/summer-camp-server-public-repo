@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 require("dotenv").config();
-const jwt = require("jsonwebtoken");
+// const jwt = require("jsonwebtoken");
 
 const port = process.env.PORT || 5000;
 
@@ -72,7 +72,28 @@ async function run() {
     
       res.json({ message: "Class deleted successfully" });
     });
+    //..........................................................
+    app.patch("/update-role/:id", async (req, res) => {
+      const { id } = req.params;
+      const { role } = req.body;
     
+      try {
+        const result = await usersCollection.updateOne(
+          { _id: ObjectId(id) },
+          { $set: { role } }
+        );
+    
+        if (result.modifiedCount === 0) {
+          res.status(404).json({ message: "User not found" });
+        } else {
+          res.json({ message: "User role updated successfully" });
+        }
+      } catch (error) {
+        res.status(500).json({ message: "Failed to update user role" });
+      }
+    });
+    
+    //..........................................................
 
     app.get("/instructor", async (req, res) => {
       const result = await usersCollection.find({ role: "instructor" }).toArray();
@@ -174,14 +195,12 @@ async function run() {
       res.send(result);
     });
 
-    console.log(process.env.DB_USER);
+    // console.log(process.env.DB_USER);
 
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.db("admin").command({ ping: 1 });
+    
   } catch (error) {
-    console.error("Error connecting to MongoDB:", error);
+    // console.error("Error connecting to MongoDB:", error);
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
