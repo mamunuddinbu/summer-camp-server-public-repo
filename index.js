@@ -72,43 +72,91 @@ async function run() {
     
       res.json({ message: "Class deleted successfully" });
     });
-    //..........................................................
-    app.put("/makeAdmin/:id", async (req, res) => {
-      const { id } = req.params;
-    
+
+    //API for Manage Classes...........................................................
+    app.get("/classes", async (req, res) => {
       try {
-        const result = await usersCollection.updateOne(
-          { _id: ObjectId(id) },
-          { $set: { role: "admin" } }
-        );
-    
-        if (result.matchedCount === 0) {
-          res.status(404).json({ message: "User not found" });
-        } else {
-          res.json({ message: "User role updated to admin successfully" });
-        }
+        const classes = await classesCollection.find().toArray();
+        res.json(classes);
       } catch (error) {
-        res.status(500).json({ message: "Failed to update user role" });
+        res.status(500).json({ message: "Failed to fetch classes" });
       }
     });
     
-    app.put("/makeInstructor/:id", async (req, res) => {
+    app.put("/approveClass/:id", async (req, res) => {
       const { id } = req.params;
     
       try {
-        const result = await usersCollection.updateOne(
+        const result = await classesCollection.updateOne(
           { _id: ObjectId(id) },
-          { $set: { role: "instructor" } }
+          { $set: { status: "approved" } }
         );
     
         if (result.matchedCount === 0) {
-          res.status(404).json({ message: "User not found" });
+          res.status(404).json({ message: "Class not found" });
         } else {
-          res.json({ message: "User role updated to instructor successfully" });
+          res.json({ message: "Class approved successfully" });
         }
       } catch (error) {
-        res.status(500).json({ message: "Failed to update user role" });
+        res.status(500).json({ message: "Failed to approve class" });
       }
+    });
+    
+    app.put("/denyClass/:id", async (req, res) => {
+      const { id } = req.params;
+    
+      try {
+        const result = await classesCollection.updateOne(
+          { _id: ObjectId(id) },
+          { $set: { status: "denied" } }
+        );
+    
+        if (result.matchedCount === 0) {
+          res.status(404).json({ message: "Class not found" });
+        } else {
+          res.json({ message: "Class denied successfully" });
+        }
+      } catch (error) {
+        res.status(500).json({ message: "Failed to deny class" });
+      }
+    });
+    
+    app.post("/sendFeedback/:id", async (req, res) => {
+      const { id } = req.params;
+      const { feedback } = req.body;
+    
+      try {
+        // Implement the logic to send feedback to the instructor
+        res.json({ message: "Feedback sent successfully" });
+      } catch (error) {
+        res.status(500).json({ message: "Failed to send feedback" });
+      }
+    });
+    
+
+
+
+
+    // API for manage users..........................................................
+    app.put("/makeAdmin/:id", async (req, res) => {
+      const { id } = req.params; 
+      
+        const result = await usersCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { role: "admin" } }
+        );    
+       
+      
+    });
+    
+    app.put("/makeInstructor/:id", async (req, res) => {
+      const { id } = req.params;    
+      
+        const result = await usersCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { role: "instructor" } }
+        );    
+      
     });
     
     
@@ -214,8 +262,6 @@ async function run() {
       const result = await classesCollection.find({ popular: true }).toArray();
       res.send(result);
     });
-
-    // console.log(process.env.DB_USER);
 
     // await client.db("admin").command({ ping: 1 });
     
