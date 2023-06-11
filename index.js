@@ -73,25 +73,45 @@ async function run() {
       res.json({ message: "Class deleted successfully" });
     });
     //..........................................................
-    app.patch("/update-role/:id", async (req, res) => {
+    app.put("/makeAdmin/:id", async (req, res) => {
       const { id } = req.params;
-      const { role } = req.body;
     
       try {
         const result = await usersCollection.updateOne(
           { _id: ObjectId(id) },
-          { $set: { role } }
+          { $set: { role: "admin" } }
         );
     
-        if (result.modifiedCount === 0) {
+        if (result.matchedCount === 0) {
           res.status(404).json({ message: "User not found" });
         } else {
-          res.json({ message: "User role updated successfully" });
+          res.json({ message: "User role updated to admin successfully" });
         }
       } catch (error) {
         res.status(500).json({ message: "Failed to update user role" });
       }
     });
+    
+    app.put("/makeInstructor/:id", async (req, res) => {
+      const { id } = req.params;
+    
+      try {
+        const result = await usersCollection.updateOne(
+          { _id: ObjectId(id) },
+          { $set: { role: "instructor" } }
+        );
+    
+        if (result.matchedCount === 0) {
+          res.status(404).json({ message: "User not found" });
+        } else {
+          res.json({ message: "User role updated to instructor successfully" });
+        }
+      } catch (error) {
+        res.status(500).json({ message: "Failed to update user role" });
+      }
+    });
+    
+    
     
     //..........................................................
 
