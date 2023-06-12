@@ -79,7 +79,7 @@ async function run() {
     app.get("/myclasses", async (req, res) => {
       
         const instructorEmail = req.query.email;
-        const allClasses = await classes.find({ instructorEmail });
+        const allClasses = await classesCollection.find({ instructorEmail }).toArray();
         res.send(allClasses);
      
     });
@@ -116,7 +116,7 @@ async function run() {
 
      
         const result = await classesCollection.updateOne(
-          { _id: ObjectId(id) },
+          { _id: new ObjectId(id) },
           { $set: { status: "denied" } }
         );
 
