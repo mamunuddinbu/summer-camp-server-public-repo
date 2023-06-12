@@ -251,9 +251,10 @@ async function run() {
     });
 
     app.get("/popular-classes", async (req, res) => {
-      const result = await classesCollection.find({ popular: true }).toArray();
+      const result = await classesCollection.find({ popular: true }).limit(6).toArray();
       res.send(result);
     });
+    
 
     app.get("/popular-instructor", async (req, res) => {
       const result = await classesCollection.find({ popular: true }).toArray();
