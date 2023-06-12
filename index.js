@@ -44,6 +44,8 @@ async function run() {
     const database = client.db("summerCampDB");
     const usersCollection = database.collection("users");
     const classesCollection = database.collection("classes");
+    const paymentCollection = database.collection("payments");
+    const selectedClassesCollection = database.collection("selectedClasses");
 
     //JWT
 
@@ -59,41 +61,39 @@ async function run() {
     //   next();
     // };
 
-    const selectedClassesCollection = database.collection("selectedClasses");
     app.delete("/deleteClass/:id", async (req, res) => {
-      // Use app.delete instead of app.get
-      console.log("hello");
       const { id } = req.params;
-      const result = await selectedClassesCollection.deleteOne({ _id: id });
+
+      console.log(id);
+      const result = await selectedClassesCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
       console.log(result);
       if (result.deletedCount === 0) {
-        res.status(404).json({ message: "Class not found" });
+        res.status(404).json({ message: "Class not found 3333" });
         return;
       }
-
       res.send({ message: "Class deleted successfully" });
     });
 
     ///////////////////////MyClasses/////////////////////////////
     // Fetch all classes for a specific instructor by email
     app.get("/myclasses", async (req, res) => {
-      
-        const instructorEmail = req.query.email;
-        const allClasses = await classesCollection.find({ instructorEmail }).toArray();
-        res.send(allClasses);
-     
+      const instructorEmail = req.query.email;
+      const allClasses = await classesCollection
+        .find({ instructorEmail })
+        .toArray();
+      res.send(allClasses);
     });
 
     // Update a class
     app.put("/classes/:id", async (req, res) => {
-      
-        const updatedClass = await classes.findByIdAndUpdate(
-          req.params.id,
-          req.body,
-          { new: true }
-        );
-        res.send(updatedClass);
-     
+      const updatedClass = await classes.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        { new: true }
+      );
+      res.send(updatedClass);
     });
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -109,23 +109,16 @@ async function run() {
         { _id: new ObjectId(id) },
         { $set: { status: "approved" } }
       );
+      res.send(result);
     });
 
     app.put("/denyClass/:id", async (req, res) => {
       const { id } = req.params;
-
-     
-        const result = await classesCollection.updateOne(
-          { _id: new ObjectId(id) },
-          { $set: { status: "denied" } }
-        );
-
-        if (result.matchedCount === 0) {
-          res.status(404).json({ message: "Class not found" });
-        } else {
-          res.json({ message: "Class denied successfully" });
-        }
-     
+      const result = await classesCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { status: "denied" } }
+      );
+      res.send(result);
     });
 
     app.post("/sendFeedback/:id", async (req, res) => {
@@ -147,6 +140,7 @@ async function run() {
         { _id: new ObjectId(id) },
         { $set: { role: "admin" } }
       );
+      res.send(result);
     });
     app.put("/makeInstructor/:id", async (req, res) => {
       const { id } = req.params;
@@ -155,6 +149,7 @@ async function run() {
         { _id: new ObjectId(id) },
         { $set: { role: "instructor" } }
       );
+      res.send(result);
     });
     //............................................................................
 
@@ -221,44 +216,120 @@ async function run() {
       res.send(result);
     });
 
+    // app.post("/classes", async (req, res) => {
+    //   const {
+    //     className,
+    //     classImage,
+    //     availableSeats,
+    //     price,
+    //     instructorName,
+    //     instructorEmail,
+    //   } = req.body;
+
+    //   await classesCollection.insertOne({
+    //     name: className,
+    //     image: classImage,
+    //     availableSeats,
+    //     price,
+    //     instructor: instructorName,
+    //     instructorEmail,
+    //     status: "pending",
+    //     popular: false,
+    //     enrolledStudent: 0,
+    //   });
+    //   res.status(201).json({ message: "Class added successfully" });
+    // });
+    /////////////////////////////FeedBack/////////////////////////////////////
     app.post("/classes", async (req, res) => {
+      const {
+        className,
+        classImage,
+        availableSeats,
+        price,
+        instructorName,
+        instructorEmail,
+      } = req.body;
+
+      await classesCollection.insertOne({
+        name: className,
+        image: classImage,
+        availableSeats,
+        price,
+        instructor: instructorName,
+        instructorEmail,
+        status: "pending",
+        popular: false,
+        enrolledStudent: 0,
+        feedback: "",
+      });
+
+      res.status(201).send({ message: "Class added successfully" });
+    });
+
+    app.post("/classes/feedback", async (req, res) => {
+      const { classId, feedback } = req.body;
+
       try {
-        const {
-          className,
-          classImage,
-          availableSeats,
-          price,
-          instructorName,
-          instructorEmail,
-        } = req.body;
-
-        await classesCollection.insertOne({
-          name: className,
-          image: classImage,
-          availableSeats,
-          price,
-          instructor: instructorName,
-          instructorEmail,
-          status: "pending",
-          popular: false,
-        });
-
-        res.status(201).json({ message: "Class added successfully" });
+        await classesCollection.updateOne(
+          { _id: ObjectId(classId) },
+          { $set: { feedback } }
+        );
+        res.status(200).send({ message: "Feedback sent successfully" });
       } catch (error) {
-        console.error("Error adding class:", error);
-        res.status(500).json({ error: "Failed to add class" });
+        console.error("Failed to send feedback:", error);
+        res.status(500).send({ message: "Failed to send feedback" });
       }
     });
 
+    //////////////////////////////////////////////////////////////////////////
     app.get("/popular-classes", async (req, res) => {
-      const result = await classesCollection.find({ popular: true }).limit(6).toArray();
+      const result = await classesCollection
+        .find({ popular: true })
+        .limit(6)
+        .toArray();
       res.send(result);
     });
-    
 
     app.get("/popular-instructor", async (req, res) => {
-      const result = await classesCollection.find({ popular: true }).toArray();
+      const result = await classesCollection
+      .find({ popular: true })
+      .limit(6)
+      .toArray();
       res.send(result);
+    });
+
+    //payment method////////////////////////
+    app.post("/create-payment-intent", async (req, res) => {
+      const booking = req.body;
+      const price = booking.price;
+      const amount = price * 100;
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        currency: "usd",
+        amount: amount,
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+
+      app.post("/payments", async (req, res) => {
+        const payment = req.body;
+        const result = await paymentCollection.insertOne(payment);
+        const id = payment.bookingId;
+        const filter = { _id: new ObjectId(id) };
+        const updatedDoc = {
+          $set: {
+            paid: true,
+            transactionId: payment.transactionId,
+          },
+        };
+        const updatedResult = await bookingsCollection.updateOne(
+          filter,
+          updatedDoc
+        );
+        res.send(result);
+      });
     });
 
     // await client.db("admin").command({ ping: 1 });
